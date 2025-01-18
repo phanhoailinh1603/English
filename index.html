@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocabulary Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f9;
+        }
+        header {
+            background-color: #4285f4;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.8em;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .container {
+            margin: 20px auto;
+            max-width: 900px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .topic-selector, .login-section {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .topic-selector input[type="text"],
+        .login-section input[type="text"],
+        .login-section input[type="password"],
+        .search-input {
+            padding: 10px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .topic-selector button,
+        .login-section button {
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: #34a853;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .topic-selector button:hover,
+        .login-section button:hover {
+            background-color: #2c8c45;
+        }
+        #topicsList {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        #topicsList div {
+            padding: 10px 15px;
+            background-color: #e8f0fe;
+            color: #1a73e8;
+            border: 1px solid #c3d4ff;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #topicsList div:hover {
+            background-color: #d2e3fc;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #4285f4;
+            color: white;
+        }
+        .add-row {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .add-row input[type="text"], .add-row select {
+            flex: 1;
+            padding: 8px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .add-row button {
+            padding: 10px;
+            font-size: 1em;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .add-row button:hover {
+            background-color: #d32f2f;
+        }
+        .back-button {
+            margin: 20px 0;
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .back-button:hover {
+            background-color: #2c66c6;
+        }
+    </style>
+</head>
+<body>
+    <header>Vocabulary Manager</header>
+    <div class="container">
+        <div id="loginSection" class="login-section">
+            <h2>Login</h2>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="login()">Login</button>
+        </div>
+
+        <div class="topic-selector" id="topicSelector" style="display:none;">
+            <input type="text" id="topicInput" placeholder="Enter topic name">
+            <button onclick="addTopic()">Add Topic</button>
+        </div>
+
+        <div id="topicsList" style="display:none;">
+            <!-- Topics will be dynamically added here -->
+        </div>
+
+        <div id="vocabularySection" style="display: none;">
+            <h3 id="currentTopic">Topic: </h3>
+            <button class="back-button" onclick="goBack()">Back to Topics</button>
+            <input type="text" id="searchInput" class="search-input" placeholder="Search vocabulary..." oninput="filterVocabulary()">
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Vocabulary</th>
+                        <th>Parts of Speech</th>
+                        <th>US Pronunciation</th>
+                        <th>UK Pronunciation</th>
+                        <th>Meaning</th>
+                        <th>Example</th>
+                        <th>Translate</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="vocabularyTable">
+                    <!-- Rows will be added dynamically here -->
+                </tbody>
+            </table>
+            <div class="add-row">
+                <input type="text" id="vocabulary" placeholder="Vocabulary">
+                <select id="partOfSpeech">
+                    <option value="">Select part of speech</option>
+                    <option value="noun">Noun</option>
+                    <option value="verb">Verb</option>
+                    <option value="adjective">Adjective</option>
+                    <option value="adverb">Adverb</option>
+                </select>
+                <input type="text" id="meaning" placeholder="Meaning">
+                <input type="text" id="example" placeholder="Example">
+                <input type="text" id="translate" placeholder="Translate">
+                <button onclick="addRow()">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let users = {};
+        let currentUser = "";
+        let currentTopic = "";
+        let rowCount = 0;
+
+        // Load users and their topics from localStorage
+        function loadUsers() {
+            const storedUsers = localStorage.getItem("users");
+            if (storedUsers) {
+                users = JSON.parse(storedUsers);
+            }
+        }
+
+        // Save users and their topics to localStorage
+        function saveUsers() {
+            localStorage.setItem("users", JSON.stringify(users));
+        }
+
+        function addTopic() {
+            const topicInput = document.getElementById("topicInput").value.trim();
+            if (!topicInput) {
+                alert("Please enter a topic name.");
+                return;
+            }
+
+            if (users[currentUser].topics[topicInput]) {
+                alert("This topic already exists.");
+                return;
+            }
+
+            users[currentUser].topics[topicInput] = [];
+            const topicsList = document.getElementById("topicsList");
+
+            const topicButton = document.createElement("div");
+            topicButton.textContent = topicInput;
+            topicButton.onclick = () => showTopic(topicInput);
+            topicsList.appendChild(topicButton);
+
+            document.getElementById("topicInput").value = "";
+            saveUsers(); // Save changes to localStorage
+        }
+
+        function showTopic(topic) {
+            currentTopic = topic;
+            rowCount = users[currentUser].topics[topic].length;
+
+            document.getElementById("currentTopic").textContent = `Topic: ${topic}`;
+            document.getElementById("vocabularySection").style.display = "block";
+            document.getElementById("topicSelector").style.display = "none";
+            document.getElementById("topicsList").style.display = "none";
+
+            const table = document.getElementById("vocabularyTable");
+            table.innerHTML = "";
+
+            users[currentUser].topics[topic].forEach((entry, index) => {
+                const row = table.insertRow();
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${entry.vocabulary}</td>
+                    <td>${entry.partOfSpeech}</td>
+                    <td>${entry.usPronunciation}</td>
+                    <td>${entry.ukPronunciation}</td>
+                    <td>${entry.meaning}</td>
+                    <td>${entry.example}</td>
+                    <td>${entry.translate}</td>
+                    <td><button onclick="deleteRow(${index})">Delete</button></td>
+                `;
+            });
+        }
+
+        async function getPronunciations(vocabulary) {
+            const apiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${vocabulary}`;
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                const usPronunciation = data[0].phonetics.find(p => p.audio).audio;
+                const ukPronunciation = data[0].phonetics.find(p => p.audio && p.text === 'UK').audio;
+                return {
+                    us: usPronunciation || "N/A",
+                    uk: ukPronunciation || "N/A"
+                };
+            } catch (error) {
+                console.error("Error fetching pronunciations:", error);
+                return { us: "N/A", uk: "N/A" };
+            }
+        }
+
+        async function addRow() {
+            const vocabulary = document.getElementById("vocabulary").value;
+            const partOfSpeech = document.getElementById("partOfSpeech").value;
+            const meaning = document.getElementById("meaning").value;
+            const example = document.getElementById("example").value;
+            const translate = document.getElementById("translate").value;
+
+            if (!vocabulary || !partOfSpeech || !meaning) {
+                alert("Please fill out the required fields: Vocabulary, Part of Speech, and Meaning.");
+                return;
+            }
+
+            const pronunciations = await getPronunciations(vocabulary);
+
+            const newRow = {
+                vocabulary,
+                partOfSpeech,
+                usPronunciation: pronunciations.us,
+                ukPronunciation: pronunciations.uk,
+                meaning,
+                example,
+                translate
+            };
+
+            users[currentUser].topics[currentTopic].push(newRow); // Save to user-specific topics
+            saveUsers(); // Save changes to localStorage
+
+            showTopic(currentTopic);
+            clearInputs();
+        }
+
+        function deleteRow(index) {
+            users[currentUser].topics[currentTopic].splice(index, 1); // Delete from user-specific topics
+            saveUsers(); // Save changes to localStorage
+            showTopic(currentTopic);
+        }
+
+        function clearInputs() {
+            document.getElementById("vocabulary").value = "";
+            document.getElementById("partOfSpeech").value = "";
+            document.getElementById("meaning").value = "";
+            document.getElementById("example").value = "";
+            document.getElementById("translate").value = "";
+        }
+
+        function goBack() {
+            document.getElementById("vocabularySection").style.display = "none";
+            document.getElementById("topicSelector").style.display = "flex";
+            document.getElementById("topicsList").style.display = "flex";
+        }
+
+        function filterVocabulary() {
+            const searchInput = document.getElementById("searchInput").value.toLowerCase();
+            const table = document.getElementById("vocabularyTable");
+            const rows = table.getElementsByTagName("tr");
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const vocabularyCell = row.getElementsByTagName("td")[1]; // Vocabulary column
+                if (vocabularyCell) {
+                    const vocabularyText = vocabularyCell.textContent || vocabularyCell.innerText;
+                    row.style.display = vocabularyText.toLowerCase().indexOf(searchInput) > -1 ? "" : "none";
+                }
+            }
+        }
+
+        function login() {
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value.trim();
+
+            if (!username || !password) {
+                alert("Please enter both username and password.");
+                return;
+            }
+
+            if (!users[username]) {
+                users[username] = { password, topics: {} }; // Create new user
+            } else if (users[username].password !== password) {
+                alert("Incorrect password.");
+                return;
+            }
+
+            currentUser = username;
+            loadUserTopics();
+            document.getElementById("loginSection").style.display = "none";
+            document.getElementById("topicSelector").style.display = "flex";
+            document.getElementById("topicsList").style.display = "flex";
+        }
+
+        function loadUserTopics() {
+            const topicsList = document.getElementById("topicsList");
+            topicsList.innerHTML = "";
+            
+            for (const topic in users[currentUser].topics) {
+                const topicButton = document.createElement("div");
+                topicButton.textContent = topic;
+                topicButton.onclick = () => showTopic(topic);
+                topicsList.appendChild(topicButton);
+            }
+        }
+
+        // Load users on page load
+        loadUsers();
+    </script>
+</body>
+</html>
