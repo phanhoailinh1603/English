@@ -190,7 +190,7 @@
 
     <script>
         let users = {};
-        let currentUser = "";
+        let currentUser  = "";
         let currentTopic = "";
         let rowCount = 0;
 
@@ -214,12 +214,12 @@
                 return;
             }
 
-            if (users[currentUser].topics[topicInput]) {
+            if (users[currentUser ].topics[topicInput]) {
                 alert("This topic already exists.");
                 return;
             }
 
-            users[currentUser].topics[topicInput] = [];
+            users[currentUser ].topics[topicInput] = [];
             const topicsList = document.getElementById("topicsList");
 
             const topicButton = document.createElement("div");
@@ -233,7 +233,7 @@
 
         function showTopic(topic) {
             currentTopic = topic;
-            rowCount = users[currentUser].topics[topic].length;
+            rowCount = users[currentUser ].topics[topic].length;
 
             document.getElementById("currentTopic").textContent = `Topic: ${topic}`;
             document.getElementById("vocabularySection").style.display = "block";
@@ -243,7 +243,7 @@
             const table = document.getElementById("vocabularyTable");
             table.innerHTML = "";
 
-            users[currentUser].topics[topic].forEach((entry, index) => {
+            users[currentUser ].topics[topic].forEach((entry, index) => {
                 const row = table.insertRow();
                 row.innerHTML = `
                     <td>${index + 1}</td>
@@ -260,18 +260,22 @@
         }
 
         async function getPronunciations(vocabulary) {
-            const apiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${vocabulary}`;
+            const apiUrl = `https://cors-anywhere.herokuapp.com/https://api.dictionaryapi.dev/api/v2/entries/en/${vocabulary}`;
             try {
                 const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error("Network response was not ok");
+                }
                 const data = await response.json();
-                const usPronunciation = data[0].phonetics.find(p => p.audio).audio;
-                const ukPronunciation = data[0].phonetics.find(p => p.audio && p.text === 'UK').audio;
+                const usPronunciation = data[0].phonetics.find(p => p.audio).audio || "N/A";
+                const ukPronunciation = data[0].phonetics.find(p => p.audio && p.text === 'UK')?.audio || "N/A";
                 return {
-                    us: usPronunciation || "N/A",
-                    uk: ukPronunciation || "N/A"
+                    us: usPronunciation,
+                    uk: ukPronunciation
                 };
             } catch (error) {
                 console.error("Error fetching pronunciations:", error);
+                alert("Could not fetch pronunciations. Please try again later.");
                 return { us: "N/A", uk: "N/A" };
             }
         }
@@ -300,7 +304,7 @@
                 translate
             };
 
-            users[currentUser].topics[currentTopic].push(newRow); // Save to user-specific topics
+            users[currentUser ].topics[currentTopic].push(newRow); // Save to user-specific topics
             saveUsers(); // Save changes to localStorage
 
             showTopic(currentTopic);
@@ -308,7 +312,7 @@
         }
 
         function deleteRow(index) {
-            users[currentUser].topics[currentTopic].splice(index, 1); // Delete from user-specific topics
+            users[currentUser ].topics[currentTopic].splice(index, 1); // Delete from user-specific topics
             saveUsers(); // Save changes to localStorage
             showTopic(currentTopic);
         }
@@ -358,7 +362,7 @@
                 return;
             }
 
-            currentUser = username;
+            currentUser  = username;
             loadUserTopics();
             document.getElementById("loginSection").style.display = "none";
             document.getElementById("topicSelector").style.display = "flex";
@@ -369,7 +373,7 @@
             const topicsList = document.getElementById("topicsList");
             topicsList.innerHTML = "";
             
-            for (const topic in users[currentUser].topics) {
+            for (const topic in users[currentUser ].topics) {
                 const topicButton = document.createElement("div");
                 topicButton.textContent = topic;
                 topicButton.onclick = () => showTopic(topic);
